@@ -73,10 +73,12 @@ public final class Main {
 
         private final File loggerFile;
         private File curFile;
+        private File myLogFile;
         private File queryPlanFile;
         private File reduceFile;
         private FileWriter logFileWriter;
         public FileWriter currentFileWriter;
+        private FileWriter myLogFileWriter;
         private FileWriter queryPlanFileWriter;
         private FileWriter reduceFileWriter;
         private Path reproduceFilePath;
@@ -114,6 +116,7 @@ public final class Main {
             }
             ensureExistsAndIsEmpty(dir, provider);
             loggerFile = new File(dir, databaseName + ".log");
+            myLogFile = new File(dir, databaseName + "myLog.log");
             logEachSelect = options.logEachSelect();
             if (logEachSelect) {
                 curFile = new File(dir, databaseName + "-cur.log");
@@ -188,6 +191,17 @@ public final class Main {
             return currentFileWriter;
         }
 
+        public FileWriter getMyLogFileWriter() {
+            if (myLogFileWriter == null) {
+                try {
+                    myLogFileWriter = new FileWriter(myLogFile, true);
+                } catch (IOException e) {
+                    throw new AssertionError(e);
+                }
+            }
+            return myLogFileWriter;
+        }
+
         public FileWriter getQueryPlanFileWriter() {
             if (!logQueryPlan) {
                 throw new UnsupportedOperationException();
@@ -245,6 +259,15 @@ public final class Main {
                 getCurrentFileWriter().write(loggable.getLogString());
 
                 currentFileWriter.flush();
+            } catch (IOException e) {
+                throw new AssertionError();
+            }
+        }
+
+        public void writeMyLog(String myLog) {
+            try {
+                getMyLogFileWriter().append(myLog);
+                myLogFileWriter.flush();
             } catch (IOException e) {
                 throw new AssertionError();
             }
