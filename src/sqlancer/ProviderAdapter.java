@@ -58,7 +58,9 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
                 try (OracleRunReproductionState localState = globalState.getState().createLocalState()) {
                     assert localState != null;
                     try {
+                        globalState.getLogger().writeMyLog("before check " + i);
                         oracle.check();
+                        globalState.getLogger().writeMyLog("passed check " + i);
                         globalState.getManager().incrementSelectQueryCount();
                     } catch (IgnoreMeException ignored) {
                     } catch (AssertionError e) {

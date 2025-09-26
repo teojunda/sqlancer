@@ -59,9 +59,15 @@ public class NoRECOracle<Z extends Select<J, E, T, C>, J extends Join<E, T, C>, 
     @Override
     public void check() throws SQLException {
         reproducer = null;
+        state.getLogger().writeMyLog("Getting schema");
         S schema = state.getSchema();
+        state.getLogger().writeMyLog("Got schema");
+        state.getLogger().writeMyLog("Getting non empty tables");
         AbstractTables<T, C> targetTables = TestOracleUtils.getRandomTableNonEmptyTables(schema);
+        state.getLogger().writeMyLog("Got non empty tables");
+        state.getLogger().writeMyLog("Setting table and Columns");
         gen = gen.setTablesAndColumns(targetTables);
+        state.getLogger().writeMyLog("Set table and Columns");
 
         Z select = gen.generateSelect();
         select.setJoinClauses(gen.getRandomJoinClauses());

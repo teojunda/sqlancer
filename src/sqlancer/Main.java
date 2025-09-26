@@ -266,7 +266,7 @@ public final class Main {
 
         public void writeMyLog(String myLog) {
             try {
-                getMyLogFileWriter().append(myLog);
+                getMyLogFileWriter().append(myLog + '\n');
                 myLogFileWriter.flush();
             } catch (IOException e) {
                 throw new AssertionError();

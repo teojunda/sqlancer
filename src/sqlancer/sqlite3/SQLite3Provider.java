@@ -1,5 +1,6 @@
 package sqlancer.sqlite3;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.sql.DriverManager;
@@ -8,6 +9,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import com.google.auto.service.AutoService;
 
@@ -178,49 +183,125 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
         return nrPerformed;
     }
 
+
+    // @Override
+    // public void generateDatabase(SQLite3GlobalState globalState) throws Exception {
+    //     Randomly r = new Randomly(SQLite3SpecialStringGenerator::generate);
+    //     globalState.setRandomly(r);
+    //     if (globalState.getDbmsSpecificOptions().generateDatabase) {
+
+    //         addSensiblePragmaDefaults(globalState);
+    //         int nrTablesToCreate = 1;
+    //         if (Randomly.getBoolean()) {
+    //             nrTablesToCreate++;
+    //         }
+    //         while (Randomly.getBooleanWithSmallProbability()) {
+    //             nrTablesToCreate++;
+    //         }
+    //         int i = 0;
+
+    //         globalState.getLogger().writeMyLog("\n\nGenerating database");
+
+    //         do {
+    //             SQLQueryAdapter tableQuery = getTableQuery(globalState, i++);
+    //             globalState.executeStatement(tableQuery);
+    //             globalState.getLogger().writeMyLog("Table Query: " + tableQuery.getQueryString());
+    //             globalState.getLogger().writeMyLog("table count: " + globalState.getSchema().getDatabaseTables().size());
+    //         } while (globalState.getSchema().getDatabaseTables().size() < nrTablesToCreate);
+    //         assert globalState.getSchema().getTables().getTables().size() == nrTablesToCreate;
+    //         checkTablesForGeneratedColumnLoops(globalState);
+    //         if (globalState.getDbmsSpecificOptions().testDBStats && Randomly.getBooleanWithSmallProbability()) {
+    //             SQLQueryAdapter tableQuery = new SQLQueryAdapter(
+    //                     "CREATE VIRTUAL TABLE IF NOT EXISTS stat USING dbstat(main)");
+    //             globalState.executeStatement(tableQuery);
+    //             globalState.getLogger().writeMyLog("Test stats: " + tableQuery.getLogString() + "\n");
+    //         }
+    //         StatementExecutor<SQLite3GlobalState, Action> se = new StatementExecutor<>(globalState, Action.values(),
+    //                 SQLite3Provider::mapActions, (q) -> {
+    //                     if (q.couldAffectSchema() && globalState.getSchema().getDatabaseTables().isEmpty()) {
+    //                         throw new IgnoreMeException();
+    //                     }
+    //                 });
+    //         se.executeStatements();
+
+    //         SQLQueryAdapter query = SQLite3TransactionGenerator.generateCommit(globalState);
+    //         globalState.executeStatement(query);
+    //         globalState.getLogger().writeMyLog("Commit: " + query.getLogString() + "\n");
+
+    //         // also do an abort for DEFERRABLE INITIALLY DEFERRED
+    //         query = SQLite3TransactionGenerator.generateRollbackTransaction(globalState);
+    //         globalState.executeStatement(query);
+    //         globalState.getLogger().writeMyLog("Rollback: " + query.getLogString() + "\n");
+    //     }
+    // }
+
+
     @Override
     public void generateDatabase(SQLite3GlobalState globalState) throws Exception {
+        // Path to your .sql file
+        String sqlFilePath = "init_DB.sql"; // Update this path accordingly
+
         Randomly r = new Randomly(SQLite3SpecialStringGenerator::generate);
         globalState.setRandomly(r);
-        if (globalState.getDbmsSpecificOptions().generateDatabase) {
+        addSensiblePragmaDefaults(globalState);
 
-            addSensiblePragmaDefaults(globalState);
-            int nrTablesToCreate = 1;
-            if (Randomly.getBoolean()) {
-                nrTablesToCreate++;
+        // Read the .sql file line by line
+        Path path = Paths.get(sqlFilePath);
+        try (BufferedReader reader = Files.newBufferedReader(path)) {
+            String line;
+            int i = 0; // Assuming `i` needs to be maintained like in getTableQuery(globalState, i++)
+
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+
+                // Skip empty lines and comments
+                if (line.isEmpty() || line.startsWith("--")) {
+                    continue;
+                }
+
+                try {
+                    ExpectedErrors errors = new ExpectedErrors();
+                    SQLite3Errors.addTableManipulationErrors(errors);
+                    errors.add("second argument to likelihood() must be a constant between 0.0 and 1.0");
+                    errors.add("non-deterministic functions prohibited in generated columns");
+                    errors.add("subqueries prohibited in generated columns");
+                    errors.add("parser stack overflow");
+                    errors.add("malformed JSON");
+                    errors.add("JSON cannot hold BLOB values");
+
+                    // Use this if you're actually reading raw SQL lines:
+                    SQLQueryAdapter query = new SQLQueryAdapter(line, errors, true);
+
+                    // Or this if you want to use SQLancer's generated table query instead:
+                    // SQLQueryAdapter query = getTableQuery(globalState, i++);
+
+                    globalState.executeStatement(query);
+                    globalState.updateSchema();
+
+                    globalState.getLogger().writeMyLog("Executed: " + query.getQueryString());
+                    globalState.getLogger().writeMyLog("Num database tables: " + globalState.getSchema().getDatabaseTables().size());
+
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to execute SQL line: " + line, e);
+                }
             }
-            while (Randomly.getBooleanWithSmallProbability()) {
-                nrTablesToCreate++;
-            }
-            int i = 0;
-
-            do {
-                SQLQueryAdapter tableQuery = getTableQuery(globalState, i++);
-                globalState.executeStatement(tableQuery);
-            } while (globalState.getSchema().getDatabaseTables().size() < nrTablesToCreate);
-            assert globalState.getSchema().getTables().getTables().size() == nrTablesToCreate;
-            checkTablesForGeneratedColumnLoops(globalState);
-            if (globalState.getDbmsSpecificOptions().testDBStats && Randomly.getBooleanWithSmallProbability()) {
-                SQLQueryAdapter tableQuery = new SQLQueryAdapter(
-                        "CREATE VIRTUAL TABLE IF NOT EXISTS stat USING dbstat(main)");
-                globalState.executeStatement(tableQuery);
-            }
-            StatementExecutor<SQLite3GlobalState, Action> se = new StatementExecutor<>(globalState, Action.values(),
-                    SQLite3Provider::mapActions, (q) -> {
-                        if (q.couldAffectSchema() && globalState.getSchema().getDatabaseTables().isEmpty()) {
-                            throw new IgnoreMeException();
-                        }
-                    });
-            se.executeStatements();
-
-            SQLQueryAdapter query = SQLite3TransactionGenerator.generateCommit(globalState);
-            globalState.executeStatement(query);
-
-            // also do an abort for DEFERRABLE INITIALLY DEFERRED
-            query = SQLite3TransactionGenerator.generateRollbackTransaction(globalState);
-            globalState.executeStatement(query);
         }
+
+
+        // Run sanity check
+        checkTablesForGeneratedColumnLoops(globalState);
+
+        // Commit transaction
+        SQLQueryAdapter query = SQLite3TransactionGenerator.generateCommit(globalState);
+        globalState.executeStatement(query);
+        globalState.getLogger().writeMyLog("Commit: " + query.getLogString());
+
+        // Rollback transaction (for testing deferred behavior)
+        query = SQLite3TransactionGenerator.generateRollbackTransaction(globalState);
+        globalState.executeStatement(query);
+        globalState.getLogger().writeMyLog("Rollback: " + query.getLogString());
     }
+
 
     private void checkTablesForGeneratedColumnLoops(SQLite3GlobalState globalState) throws Exception {
         for (SQLite3Table table : globalState.getSchema().getDatabaseTables()) {
@@ -282,6 +363,7 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
             globalState.executeStatement(new SQLQueryAdapter(s));
         }
     }
+
 
     @Override
     public SQLConnection createDatabase(SQLite3GlobalState globalState) throws SQLException {
