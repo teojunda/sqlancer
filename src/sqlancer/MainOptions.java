@@ -150,6 +150,9 @@ public class MainOptions {
     @Parameter(names = "--canonicalize-sql-strings", description = "Should canonicalize query string (add ';' at the end", arity = 1)
     private boolean canonicalizeSqlString = true; // NOPMD
 
+    @Parameter(names = "--unified-db-enable", description = "Enable the experimental feature Unified database", arity = 1)
+    private boolean enableUnifiedDatabase;
+
     public int getMaxExpressionDepth() {
         return maxExpressionDepth;
     }
@@ -197,6 +200,10 @@ public class MainOptions {
 
     public boolean enableQPG() {
         return enableQPG;
+    }
+
+    public boolean enableUnifiedDatabase() {
+        return enableUnifiedDatabase;
     }
 
     public int getQPGMaxMutationInterval() {
