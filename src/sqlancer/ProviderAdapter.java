@@ -108,10 +108,15 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
 
     public abstract void generateDatabase(G globalState) throws Exception;
 
+    // implement in specific DBMS - sqlite3
+    public void generateUnifiedDatabase(G glboalState) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public Reproducer<G> generateAndTestUnifiedDatabase(G globalState) throws Exception {
         try {
-            generateDatabase(globalState);
+            generateUnifiedDatabase(globalState);
             checkViewsAreValid(globalState);
             globalState.getManager().incrementCreateDatabase();
 
