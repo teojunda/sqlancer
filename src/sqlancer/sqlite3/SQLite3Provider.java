@@ -1,6 +1,8 @@
 package sqlancer.sqlite3;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -8,6 +10,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import com.google.auto.service.AutoService;
 
@@ -224,7 +229,66 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
 
     @Override
     public void generateUnifiedDatabase(SQLite3GlobalState globalState) throws Exception {
-        
+        // Path to your .sql file
+        String sqlFilePath = "init_DB.sql"; // Update this path accordingly
+        Path path = Paths.get(sqlFilePath);
+        if (!Files.exists(path)) {
+            throw new FileNotFoundException("SQL init file not found: " + sqlFilePath);
+        }
+
+        Randomly r = new Randomly(SQLite3SpecialStringGenerator::generate);
+        globalState.setRandomly(r);
+        if (globalState.getDbmsSpecificOptions().generateDatabase) {
+
+            addSensiblePragmaDefaults(globalState);
+
+            // generate empty tables by read the .sql file line by line
+            try (BufferedReader reader = Files.newBufferedReader(path)) {
+                ExpectedErrors errors = new ExpectedErrors();
+                SQLite3Errors.addTableManipulationErrors(errors);
+                errors.add("second argument to likelihood() must be a constant between 0.0 and 1.0");
+                errors.add("non-deterministic functions prohibited in generated columns");
+                errors.add("subqueries prohibited in generated columns");
+                errors.add("parser stack overflow");
+                errors.add("malformed JSON");
+                errors.add("JSON cannot hold BLOB values");
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+
+                    // Skip empty lines and comments
+                    if (line.isEmpty() || line.startsWith("--")) {
+                        continue;
+                    }
+
+                    SQLQueryAdapter query = new SQLQueryAdapter(line, errors, true);
+
+                    globalState.executeStatement(query);
+                }
+            }
+
+            checkTablesForGeneratedColumnLoops(globalState);
+            if (globalState.getDbmsSpecificOptions().testDBStats && Randomly.getBooleanWithSmallProbability()) {
+                SQLQueryAdapter tableQuery = new SQLQueryAdapter(
+                        "CREATE VIRTUAL TABLE IF NOT EXISTS stat USING dbstat(main)");
+                globalState.executeStatement(tableQuery);
+            }
+            StatementExecutor<SQLite3GlobalState, Action> se = new StatementExecutor<>(globalState, Action.values(),
+                    SQLite3Provider::mapActions, (q) -> {
+                        if (q.couldAffectSchema() && globalState.getSchema().getDatabaseTables().isEmpty()) {
+                            throw new IgnoreMeException();
+                        }
+                    });
+            se.executeStatements();
+
+            SQLQueryAdapter query = SQLite3TransactionGenerator.generateCommit(globalState);
+            globalState.executeStatement(query);
+
+            // also do an abort for DEFERRABLE INITIALLY DEFERRED
+            query = SQLite3TransactionGenerator.generateRollbackTransaction(globalState);
+            globalState.executeStatement(query);
+        }
     }
 
     private void checkTablesForGeneratedColumnLoops(SQLite3GlobalState globalState) throws Exception {
