@@ -252,6 +252,7 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
                 errors.add("parser stack overflow");
                 errors.add("malformed JSON");
                 errors.add("JSON cannot hold BLOB values");
+                errors.add("PRIMARY KEY missing on table");
 
                 String line;
                 while ((line = reader.readLine()) != null) {
