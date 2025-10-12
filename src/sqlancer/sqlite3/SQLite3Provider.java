@@ -222,6 +222,11 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
         }
     }
 
+    @Override
+    public void generateUnifiedDatabase(SQLite3GlobalState globalState) throws Exception {
+        
+    }
+
     private void checkTablesForGeneratedColumnLoops(SQLite3GlobalState globalState) throws Exception {
         for (SQLite3Table table : globalState.getSchema().getDatabaseTables()) {
             SQLQueryAdapter q = new SQLQueryAdapter("SELECT * FROM " + table.getName(),

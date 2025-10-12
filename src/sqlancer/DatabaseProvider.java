@@ -44,6 +44,18 @@ public interface DatabaseProvider<G extends GlobalState<O, ?, C>, O extends DBMS
      */
     void generateAndTestDatabaseWithQueryPlanGuidance(G globalState) throws Exception;
 
+    /**
+     * The experimental feature: Unified database.
+     *
+     * @param globalState
+     *            the state created and is valid for this method call.
+     *
+     * @throws Exception
+     *             if testing fails.
+     *
+     */
+    Reproducer<G> generateAndTestUnifiedDatabase(G globalState) throws Exception;
+
     C createDatabase(G globalState) throws Exception;
 
     /**

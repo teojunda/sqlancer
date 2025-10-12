@@ -108,6 +108,37 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
 
     public abstract void generateDatabase(G globalState) throws Exception;
 
+    @Override
+    public Reproducer<G> generateAndTestUnifiedDatabase(G globalState) throws Exception {
+        try {
+            generateDatabase(globalState);
+            checkViewsAreValid(globalState);
+            globalState.getManager().incrementCreateDatabase();
+
+            TestOracle<G> oracle = getTestOracle(globalState);
+            for (int i = 0; i < globalState.getOptions().getNrQueries(); i++) {
+                try (OracleRunReproductionState localState = globalState.getState().createLocalState()) {
+                    assert localState != null;
+                    try {
+                        oracle.check();
+                        globalState.getManager().incrementSelectQueryCount();
+                    } catch (IgnoreMeException ignored) {
+                    } catch (AssertionError e) {
+                        Reproducer<G> reproducer = oracle.getLastReproducer();
+                        if (reproducer != null) {
+                            return reproducer;
+                        }
+                        throw e;
+                    }
+                    localState.executedWithoutError();
+                }
+            }
+        } finally {
+            globalState.getConnection().close();
+        }
+        return null;
+    }
+
     // QPG: entry function
     @Override
     public void generateAndTestDatabaseWithQueryPlanGuidance(G globalState) throws Exception {
