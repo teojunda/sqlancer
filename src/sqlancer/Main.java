@@ -463,6 +463,8 @@ public final class Main {
                 Reproducer<G> reproducer = null;
                 if (options.enableQPG()) {
                     provider.generateAndTestDatabaseWithQueryPlanGuidance(state);
+                } else if (options.enableUnifiedDatabase()) {
+                    reproducer = provider.generateAndTestUnifiedDatabase(state);
                 } else {
                     reproducer = provider.generateAndTestDatabase(state);
                 }
