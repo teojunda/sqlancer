@@ -151,7 +151,10 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
             nrPerformed = r.getInteger(0, 3);
             break;
         case INSERT:
-            nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
+            int insertsPerTable = globalState.getOptions().getMaxNumberInserts();
+            // int insertsPerTable = 30;
+            int numTables = globalState.getSchema().getTables().getTables().size();
+            nrPerformed = r.getInteger(0, insertsPerTable) * numTables;
             break;
         case MANIPULATE_STAT_TABLE:
             nrPerformed = r.getInteger(0, 5);
