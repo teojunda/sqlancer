@@ -151,10 +151,68 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
             nrPerformed = r.getInteger(0, 3);
             break;
         case INSERT:
-            int insertsPerTable = globalState.getOptions().getMaxNumberInserts();
-            // int insertsPerTable = 30;
+            nrPerformed = r.getInteger(0, globalState.getOptions().getMaxNumberInserts());
+            break;
+        case MANIPULATE_STAT_TABLE:
+            nrPerformed = r.getInteger(0, 5);
+            break;
+        case CREATE_INDEX:
+            nrPerformed = r.getInteger(0, 5);
+            break;
+        case VIRTUAL_TABLE_ACTION:
+        case UPDATE:
+            nrPerformed = r.getInteger(0, 30);
+            break;
+        case PRAGMA:
+            nrPerformed = r.getInteger(0, 20);
+            break;
+        case CREATE_TABLE:
+        case CREATE_VIRTUALTABLE:
+        case CREATE_RTREETABLE:
+            nrPerformed = 0;
+            break;
+        case TRANSACTION_START:
+        case REINDEX:
+        case ANALYZE:
+        case ROLLBACK_TRANSACTION:
+        case COMMIT:
+        default:
+            nrPerformed = r.getInteger(1, 10);
+            break;
+        }
+        return nrPerformed;
+    }
+
+    private static int mapActionsUnifiedDatabase(SQLite3GlobalState globalState, Action a) {
+        int nrPerformed = 0;
+        Randomly r = globalState.getRandomly();
+        switch (a) {
+        case CREATE_VIEW:
+            nrPerformed = r.getInteger(0, 2);
+            break;
+        case DELETE:
+        case DROP_VIEW:
+        case DROP_INDEX:
+            nrPerformed = r.getInteger(0, 0);
+            break;
+        case ALTER:
+            nrPerformed = r.getInteger(0, 0);
+            break;
+        case EXPLAIN:
+        case CREATE_TRIGGER:
+        case DROP_TABLE:
+            nrPerformed = r.getInteger(0, 0);
+            break;
+        case VACUUM:
+        case CHECK_RTREE_TABLE:
+            nrPerformed = r.getInteger(0, 3);
+            break;
+        case INSERT:
+            // int insertsPerTable = globalState.getOptions().getMaxNumberInserts();
+            int insertsPerTable = 2;
             int numTables = globalState.getSchema().getTables().getTables().size();
-            nrPerformed = r.getInteger(0, insertsPerTable) * numTables;
+            // nrPerformed = r.getInteger(0, insertsPerTable) * numTables;
+            nrPerformed = insertsPerTable * numTables;
             break;
         case MANIPULATE_STAT_TABLE:
             nrPerformed = r.getInteger(0, 5);
@@ -279,7 +337,7 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
                 globalState.executeStatement(tableQuery);
             }
             StatementExecutor<SQLite3GlobalState, Action> se = new StatementExecutor<>(globalState, Action.values(),
-                    SQLite3Provider::mapActions, (q) -> {
+                    SQLite3Provider::mapActionsUnifiedDatabase, (q) -> {
                         if (q.couldAffectSchema() && globalState.getSchema().getDatabaseTables().isEmpty()) {
                             throw new IgnoreMeException();
                         }
