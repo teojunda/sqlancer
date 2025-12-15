@@ -125,8 +125,9 @@ public final class Randomly {
 
     // this function determines how many tables are queried in a select statement
     public static <T> List<T> nonEmptySubset(List<T> columns) {
+        // set between 1 to 2
         int nr = 1 + getNextInt(0, columns.size());
-        nr = Math.min(nr, 3);
+        nr = Math.min(nr, 2);
         return nonEmptySubset(columns, nr);
     }
 
