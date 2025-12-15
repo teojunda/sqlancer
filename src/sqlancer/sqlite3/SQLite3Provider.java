@@ -256,6 +256,8 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
                 // data is added in the .sql file. ignore commands that have datatype mismatch.
                 errors.add("[SQLITE_MISMATCH] Data type mismatch (datatype mismatch)");
                 errors.add("[SQLITE_CONSTRAINT_PRIMARYKEY] A PRIMARY KEY constraint failed ");
+                errors.add("[SQLITE_CONSTRAINT_NOTNULL]");
+                errors.add("[SQLITE_CONSTRAINT_UNIQUE]");
 
                 String line;
                 while ((line = reader.readLine()) != null) {
