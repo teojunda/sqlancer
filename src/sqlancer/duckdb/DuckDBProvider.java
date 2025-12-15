@@ -1,6 +1,11 @@
 package sqlancer.duckdb;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -28,6 +33,10 @@ import sqlancer.duckdb.gen.DuckDBRandomQuerySynthesizer;
 import sqlancer.duckdb.gen.DuckDBTableGenerator;
 import sqlancer.duckdb.gen.DuckDBUpdateGenerator;
 import sqlancer.duckdb.gen.DuckDBViewGenerator;
+import sqlancer.sqlite3.SQLite3Errors;
+import sqlancer.sqlite3.SQLite3GlobalState;
+import sqlancer.sqlite3.SQLite3SpecialStringGenerator;
+import sqlancer.sqlite3.gen.SQLite3TransactionGenerator;
 
 @AutoService(DatabaseProvider.class)
 public class DuckDBProvider extends SQLProviderAdapter<DuckDBGlobalState, DuckDBOptions> {
@@ -120,6 +129,36 @@ public class DuckDBProvider extends SQLProviderAdapter<DuckDBGlobalState, DuckDB
                     }
                 });
         se.executeStatements();
+    }
+
+    @Override
+    public void generateUnifiedDatabase(DuckDBGlobalState globalState) throws Exception {
+        // Path to your .sql file
+        String sqlFilePath = "duckdb_init_DB.sql"; // Update this path accordingly
+        Path path = Paths.get(sqlFilePath);
+        if (!Files.exists(path)) {
+            throw new FileNotFoundException("SQL init file not found: " + sqlFilePath);
+        }
+
+
+        // generate tables by reading the .sql file line by line
+        try (BufferedReader reader = Files.newBufferedReader(path)) {
+            ExpectedErrors errors = new ExpectedErrors();
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+
+                // Skip empty lines and comments
+                if (line.isEmpty() || line.startsWith("--")) {
+                    continue;
+                }
+
+                SQLQueryAdapter query = new SQLQueryAdapter(line, errors, true);
+
+                globalState.executeStatement(query);
+            }
+        }
     }
 
     public void tryDeleteFile(String fname) {
