@@ -230,7 +230,7 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
     @Override
     public void generateUnifiedDatabase(SQLite3GlobalState globalState) throws Exception {
         // Path to your .sql file
-        String sqlFilePath = "init_DB.sql"; // Update this path accordingly
+        String sqlFilePath = "sqlite3_init_DB.sql"; // Update this path accordingly
         Path path = Paths.get(sqlFilePath);
         if (!Files.exists(path)) {
             throw new FileNotFoundException("SQL init file not found: " + sqlFilePath);
