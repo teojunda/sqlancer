@@ -126,7 +126,7 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
             globalState.getManager().incrementCreateDatabase();
 
             TestOracle<G> oracle = getTestOracle(globalState);
-            for (int i = 0; i < globalState.getOptions().getNrQueries(); i++) {
+            while (true) {
                 try (OracleRunReproductionState localState = globalState.getState().createLocalState()) {
                     assert localState != null;
                     try {
@@ -146,7 +146,7 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
         } finally {
             globalState.getConnection().close();
         }
-        return null;
+        // return null;
     }
 
     // QPG: entry function
