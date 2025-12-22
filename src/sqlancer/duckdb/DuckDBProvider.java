@@ -144,6 +144,8 @@ public class DuckDBProvider extends SQLProviderAdapter<DuckDBGlobalState, DuckDB
         // generate tables by reading the .sql file line by line
         try (BufferedReader reader = Files.newBufferedReader(path)) {
             ExpectedErrors errors = new ExpectedErrors();
+            errors.add("Constraint Error: NOT NULL constraint failed");
+            errors.add("Constraint Error: Duplicate key");
 
             String line;
             while ((line = reader.readLine()) != null) {
