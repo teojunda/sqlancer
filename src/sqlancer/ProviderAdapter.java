@@ -19,6 +19,8 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
     private final Class<G> globalClass;
     private final Class<O> optionClass;
 
+    private static boolean unifiedDbIsCached = false;
+
     // Variables for QPG
     Map<String, String> queryPlanPool = new HashMap<>();
     static double[] weightedAverageReward; // static variable for sharing across all threads
@@ -121,8 +123,11 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
     @Override
     public Reproducer<G> generateAndTestUnifiedDatabase(G globalState) throws Exception {
         try {
-            generateUnifiedDatabase(globalState);
-            checkViewsAreValid(globalState);
+            if (!unifiedDbIsCached) {
+                generateUnifiedDatabase(globalState);
+                checkViewsAreValid(globalState);
+                unifiedDbIsCached = true;
+            }
             globalState.getManager().incrementCreateDatabase();
 
             TestOracle<G> oracle = getTestOracle(globalState);
@@ -144,7 +149,7 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
                 }
             }
         } finally {
-            globalState.getConnection().close();
+            // globalState.getConnection().close();
         }
         // return null;
     }
