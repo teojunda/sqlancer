@@ -131,7 +131,9 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
         Randomly r = globalState.getRandomly();
         switch (a) {
         case CREATE_VIEW:
-            nrPerformed = r.getInteger(0, 2);
+            // Unified DB: temporarily disable CREATE_VIEW for fair experiement
+            nrPerformed = 0;
+            // nrPerformed = r.getInteger(0, 2);
             break;
         case DELETE:
         case DROP_VIEW:
