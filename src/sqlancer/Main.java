@@ -88,6 +88,11 @@ public final class Main {
         private final boolean useReducer;
         private final DatabaseProvider<?, ?, ?> databaseProvider;
 
+        private final File dir;
+        private static int queryPlanFileCount = 0;
+        private static long queryPlanFileStartTime = System.nanoTime();
+        private static final long THIRTY_MINUTES_NANOS = TimeUnit.MINUTES.toNanos(30);
+
         private static final class AlsoWriteToConsoleFileWriter extends FileWriter {
 
             AlsoWriteToConsoleFileWriter(File file) throws IOException {
@@ -108,7 +113,7 @@ public final class Main {
         }
 
         public StateLogger(String databaseName, DatabaseProvider<?, ?, ?> provider, MainOptions options) {
-            File dir = new File(LOG_DIRECTORY, provider.getDBMSName());
+            dir = new File(LOG_DIRECTORY, provider.getDBMSName());
             if (dir.exists() && !dir.isDirectory()) {
                 throw new AssertionError(dir);
             }
@@ -120,6 +125,7 @@ public final class Main {
             }
             logQueryPlan = options.logQueryPlan();
             if (logQueryPlan) {
+                // queryPlanFile is re-instantiated in getQueryPlanFileWriter()
                 queryPlanFile = new File(dir, databaseName + "-plan.log");
             }
             this.useReducer = options.useReducer();
@@ -194,7 +200,17 @@ public final class Main {
             }
             if (queryPlanFileWriter == null) {
                 try {
+                    queryPlanFile = new File(dir, queryPlanFileCount + "-plan.log");
                     queryPlanFileWriter = new FileWriter(queryPlanFile, true);
+                } catch (IOException e) {
+                    throw new AssertionError(e);
+                }
+            } else if (System.nanoTime() - queryPlanFileStartTime >= THIRTY_MINUTES_NANOS) {
+                try {
+                    queryPlanFileCount++;
+                    queryPlanFile = new File(dir, queryPlanFileCount + "-plan.log");
+                    queryPlanFileWriter = new FileWriter(queryPlanFile, true);
+                    queryPlanFileStartTime = System.nanoTime();
                 } catch (IOException e) {
                     throw new AssertionError(e);
                 }
