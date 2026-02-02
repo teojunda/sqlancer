@@ -514,8 +514,10 @@ public final class Main {
                     reproducer = provider.generateAndTestDatabase(state);
                 }
                 try {
-                    logger.getCurrentFileWriter().close();
-                    logger.currentFileWriter = null;
+                    if (logger.logEachSelect) {
+                        logger.getCurrentFileWriter().close();
+                        logger.currentFileWriter = null;
+                    }
                 } catch (IOException e) {
                     throw new AssertionError(e);
                 }
