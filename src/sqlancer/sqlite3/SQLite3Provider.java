@@ -256,10 +256,10 @@ public class SQLite3Provider extends SQLProviderAdapter<SQLite3GlobalState, SQLi
                 errors.add("JSON cannot hold BLOB values");
                 errors.add("PRIMARY KEY missing on table");
                 // data is added in the .sql file. ignore commands that have datatype mismatch.
-                errors.add("[SQLITE_MISMATCH] Data type mismatch (datatype mismatch)");
-                errors.add("[SQLITE_CONSTRAINT_PRIMARYKEY] A PRIMARY KEY constraint failed ");
-                errors.add("[SQLITE_CONSTRAINT_NOTNULL]");
-                errors.add("[SQLITE_CONSTRAINT_UNIQUE]");
+                errors.add("datatype mismatch");
+                errors.add("PRIMARY KEY constraint failed");
+                errors.add("UNIQUE constraint failed");
+                errors.add("NOT NULL constraint failed");
 
                 String line;
                 while ((line = reader.readLine()) != null) {
