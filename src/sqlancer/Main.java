@@ -181,9 +181,9 @@ public final class Main {
         }
 
         public FileWriter getCurrentFileWriter() {
-            if (!logEachSelect) {
-                throw new UnsupportedOperationException();
-            }
+            // if (!logEachSelect) {
+            //     throw new UnsupportedOperationException();
+            // }
             if (currentFileWriter == null) {
                 try {
                     currentFileWriter = new FileWriter(curFile, false);
@@ -426,8 +426,8 @@ public final class Main {
         private final Randomly r;
 
         // for unified DB
-        private static Object cachedState = null;
-        private static int bugCount = 0;
+        // private static Object cachedState = null;
+        // private static int bugCount = 0;
 
         public DBMSExecutor(DatabaseProvider<G, O, C> provider, MainOptions options, O dbmsSpecificOptions,
                 String databaseName, Randomly r) {
@@ -458,66 +458,40 @@ public final class Main {
         }
 
         public void run() throws Exception {
-            G state;
-            boolean useCachedUnified = options.enableUnifiedDatabase() && cachedState != null;
-            if (useCachedUnified) {
-                state = (G) cachedState;
-                logger = new StateLogger(databaseName + "bug_" + bugCount, provider, options);
-                ++bugCount;
-
-                stateToRepro = provider.getStateToReproduce(databaseName);
-                stateToRepro.seedValue = r.getSeed();
-                state.setState(stateToRepro);
-            } else {
-                state = createGlobalState();
-                cachedState = state;
-                stateToRepro = provider.getStateToReproduce(databaseName);
-                stateToRepro.seedValue = r.getSeed();
-                state.setState(stateToRepro);
-                logger = new StateLogger(databaseName, provider, options);
-                state.setRandomly(r);
-                state.setDatabaseName(databaseName);
-                state.setMainOptions(options);
-                state.setDbmsSpecificOptions(command);
-            }
-
-            C con;
-            if (useCachedUnified) {
-                con = state.getConnection();
-            } else {
-                con = provider.createDatabase(state);
-                state.setConnection(con);
-            }
-
-            try {
-                if (!useCachedUnified) {
-                    QueryManager<C> manager = new QueryManager<>(state);
-                    state.setConnection(con);
-                    state.setStateLogger(logger);
-                    state.setManager(manager);
-                    if (options.logEachSelect()) {
-                        logger.writeCurrent(state.getState());
-                    }
-                }
+            G state = createGlobalState();
+            stateToRepro = provider.getStateToReproduce(databaseName);
+            stateToRepro.seedValue = r.getSeed();
+            state.setState(stateToRepro);
+            logger = new StateLogger(databaseName, provider, options);
+            state.setRandomly(r);
+            state.setDatabaseName(databaseName);
+            state.setMainOptions(options);
+            state.setDbmsSpecificOptions(command);
+            try (C con = provider.createDatabase(state)) {
+                QueryManager<C> manager = new QueryManager<>(state);
                 try {
                     stateToRepro.databaseVersion = con.getDatabaseVersion();
                 } catch (Exception e) {
                     // ignore
                 }
-
+                state.setConnection(con);
+                state.setStateLogger(logger);
+                state.setManager(manager);
+                if (options.logEachSelect()) {
+                    logger.writeCurrent(state.getState());
+                }
                 Reproducer<G> reproducer = null;
-                if (options.enableQPG()) {
-                    provider.generateAndTestDatabaseWithQueryPlanGuidance(state);
-                } else if (options.enableUnifiedDatabase()) {
+                if (options.enableUnifiedDatabase()) {
                     reproducer = provider.generateAndTestUnifiedDatabase(state);
+                }
+                else if (options.enableQPG()) {
+                    provider.generateAndTestDatabaseWithQueryPlanGuidance(state);
                 } else {
                     reproducer = provider.generateAndTestDatabase(state);
                 }
                 try {
-                    if (logger.logEachSelect) {
-                        logger.getCurrentFileWriter().close();
-                        logger.currentFileWriter = null;
-                    }
+                    logger.getCurrentFileWriter().close();
+                    logger.currentFileWriter = null;
                 } catch (IOException e) {
                     throw new AssertionError(e);
                 }
@@ -560,12 +534,119 @@ public final class Main {
 
                     throw new AssertionError("Found a potential bug, please check reducer log for detail.");
                 }
-            } finally {
-                if (!options.enableUnifiedDatabase()) {
-                    con.close();
-                }
             }
         }
+
+
+        // public void run() throws Exception {
+        //     G state;
+        //     boolean useCachedUnified = options.enableUnifiedDatabase() && cachedState != null;
+        //     if (useCachedUnified) {
+        //         state = (G) cachedState;
+        //         logger = new StateLogger(databaseName + "bug_" + bugCount, provider, options);
+        //         ++bugCount;
+
+        //         stateToRepro = provider.getStateToReproduce(databaseName);
+        //         stateToRepro.seedValue = r.getSeed();
+        //         state.setState(stateToRepro);
+        //     } else {
+        //         state = createGlobalState();
+        //         cachedState = state;
+        //         stateToRepro = provider.getStateToReproduce(databaseName);
+        //         stateToRepro.seedValue = r.getSeed();
+        //         state.setState(stateToRepro);
+        //         logger = new StateLogger(databaseName, provider, options);
+        //         state.setRandomly(r);
+        //         state.setDatabaseName(databaseName);
+        //         state.setMainOptions(options);
+        //         state.setDbmsSpecificOptions(command);
+        //     }
+
+        //     C con;
+        //     if (useCachedUnified) {
+        //         con = state.getConnection();
+        //     } else {
+        //         con = provider.createDatabase(state);
+        //         state.setConnection(con);
+        //     }
+
+        //     try {
+        //         if (!useCachedUnified) {
+        //             QueryManager<C> manager = new QueryManager<>(state);
+        //             state.setConnection(con);
+        //             state.setStateLogger(logger);
+        //             state.setManager(manager);
+        //             if (options.logEachSelect()) {
+        //                 logger.writeCurrent(state.getState());
+        //             }
+        //         }
+        //         try {
+        //             stateToRepro.databaseVersion = con.getDatabaseVersion();
+        //         } catch (Exception e) {
+        //             // ignore
+        //         }
+
+        //         Reproducer<G> reproducer = null;
+        //         if (options.enableQPG()) {
+        //             provider.generateAndTestDatabaseWithQueryPlanGuidance(state);
+        //         } else if (options.enableUnifiedDatabase()) {
+        //             reproducer = provider.generateAndTestUnifiedDatabase(state);
+        //         } else {
+        //             reproducer = provider.generateAndTestDatabase(state);
+        //         }
+        //         try {
+        //             if (logger.logEachSelect) {
+        //                 logger.getCurrentFileWriter().close();
+        //                 logger.currentFileWriter = null;
+        //             }
+        //         } catch (IOException e) {
+        //             throw new AssertionError(e);
+        //         }
+
+        //         if (options.serializeReproduceState() && reproducer != null) {
+        //             stateToRepro.serialize(logger.getReproduceFilePath());
+        //         }
+        //         if (options.reduceAST() && !options.useReducer()) {
+        //             throw new AssertionError("To reduce AST, use-reducer option must be enabled first");
+        //         }
+        //         if (options.useReducer()) {
+        //             if (reproducer == null) {
+        //                 logger.getReduceFileWriter().write("current oracle does not support experimental reducer.");
+        //                 throw new IgnoreMeException();
+        //             }
+        //             G newGlobalState = createGlobalState();
+        //             newGlobalState.setState(stateToRepro);
+        //             newGlobalState.setRandomly(r);
+        //             newGlobalState.setDatabaseName(databaseName);
+        //             newGlobalState.setMainOptions(options);
+        //             newGlobalState.setDbmsSpecificOptions(command);
+        //             QueryManager<C> newManager = new QueryManager<>(newGlobalState);
+        //             newGlobalState.setStateLogger(new StateLogger(databaseName, provider, options));
+        //             newGlobalState.setManager(newManager);
+
+        //             Reducer<G> reducer = new StatementReducer<>(provider);
+        //             reducer.reduce(state, reproducer, newGlobalState);
+
+        //             if (options.reduceAST()) {
+        //                 Reducer<G> astBasedReducer = new ASTBasedReducer<>(provider);
+        //                 astBasedReducer.reduce(state, reproducer, newGlobalState);
+        //             }
+
+        //             try {
+        //                 logger.getReduceFileWriter().close();
+        //                 logger.reduceFileWriter = null;
+        //             } catch (IOException e) {
+        //                 throw new AssertionError(e);
+        //             }
+
+        //             throw new AssertionError("Found a potential bug, please check reducer log for detail.");
+        //         }
+        //     } finally {
+        //         if (!options.enableUnifiedDatabase()) {
+        //             con.close();
+        //         }
+        //     }
+        // }
 
         private G getInitializedGlobalState(long seed) {
             G state = createGlobalState();

@@ -11,7 +11,9 @@ import sqlancer.StateToReproduce.OracleRunReproductionState;
 import sqlancer.common.DBMSCommon;
 import sqlancer.common.oracle.CompositeTestOracle;
 import sqlancer.common.oracle.TestOracle;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.common.schema.AbstractSchema;
+import sqlancer.sqlite3.SQLite3GlobalState;
 
 public abstract class ProviderAdapter<G extends GlobalState<O, ? extends AbstractSchema<G, ?>, C>, O extends DBMSSpecificOptions<? extends OracleFactory<G>>, C extends SQLancerDBConnection>
         implements DatabaseProvider<G, O, C> {
@@ -122,20 +124,21 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
 
     @Override
     public Reproducer<G> generateAndTestUnifiedDatabase(G globalState) throws Exception {
+        int queryCounter = 0;
+        int RECONNECT_THRESHOLD = 100000; // Adjust based on your memory needs
         try {
-            if (!unifiedDbIsCached) {
-                generateUnifiedDatabase(globalState);
-                checkViewsAreValid(globalState);
-                unifiedDbIsCached = true;
-            }
+            generateUnifiedDatabase(globalState);
+            checkViewsAreValid(globalState);
             globalState.getManager().incrementCreateDatabase();
 
             TestOracle<G> oracle = getTestOracle(globalState);
-            while (true) {
+            while (queryCounter < RECONNECT_THRESHOLD) {
+                ++queryCounter;
                 try (OracleRunReproductionState localState = globalState.getState().createLocalState()) {
                     assert localState != null;
                     try {
                         oracle.check();
+                        queryCounter++;
                         if (globalState.getOptions().logQueryPlan()) {
                             String query = oracle.getLastQueryString();
                             String queryPlan = getQueryPlan(query, globalState);
@@ -154,10 +157,27 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
                 }
             }
         } finally {
-            // globalState.getConnection().close();
+            globalState.getConnection().close();
         }
-        // return null;
+        return null;
     }
+
+    // private void refreshConnection(G globalState) throws Exception {
+    //     // 1. Close the current connection to free up memory/cache
+    //     if (globalState.getConnection() != null) {
+    //         globalState.getConnection().close();
+    //         System.gc();
+    //         System.out.println("refresh connection");
+    //     }
+
+    //     // 2. Use the current class's createDatabase method
+    //     // Note: Ensure your createDatabase logic doesn't delete the file 
+    //     // if 'unifiedDbIsCached' is true!
+    //     C newCon = createDatabase(globalState);
+        
+    //     // 3. Update the state with the fresh connection
+    //     globalState.setConnection(newCon);
+    // }
 
     // QPG: entry function
     @Override
