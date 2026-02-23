@@ -484,15 +484,15 @@ public class SQLite3ToStringVisitor extends ToStringVisitor<SQLite3Expression> i
     @Override
     public void visit(SQLite3TableReference tableReference) {
         sb.append(tableReference.getTable().getName());
-        if (tableReference.getIndexedBy() == null) {
-            // Don't allow NOT INDEXED
-            // if (Randomly.getBooleanWithSmallProbability()) {
-            //     sb.append(" NOT INDEXED");
-            // }
-        } else {
-            sb.append(" INDEXED BY ");
-            sb.append(tableReference.getIndexedBy());
-        }
+        // Remove indexing from query generation
+        // if (tableReference.getIndexedBy() == null) {
+        //     if (Randomly.getBooleanWithSmallProbability()) {
+        //         sb.append(" NOT INDEXED");
+        //     }
+        // } else {
+        //     sb.append(" INDEXED BY ");
+        //     sb.append(tableReference.getIndexedBy());
+        // }
     }
 
     private void visit(SQLite3Expression... expressions) {
