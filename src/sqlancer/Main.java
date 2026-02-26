@@ -181,9 +181,9 @@ public final class Main {
         }
 
         public FileWriter getCurrentFileWriter() {
-            // if (!logEachSelect) {
-            //     throw new UnsupportedOperationException();
-            // }
+            if (!logEachSelect) {
+                throw new UnsupportedOperationException();
+            }
             if (currentFileWriter == null) {
                 try {
                     currentFileWriter = new FileWriter(curFile, false);
@@ -490,8 +490,10 @@ public final class Main {
                     reproducer = provider.generateAndTestDatabase(state);
                 }
                 try {
-                    logger.getCurrentFileWriter().close();
-                    logger.currentFileWriter = null;
+                    if (logger.logEachSelect) {
+                        logger.getCurrentFileWriter().close();
+                        logger.currentFileWriter = null;
+                    }
                 } catch (IOException e) {
                     throw new AssertionError(e);
                 }
@@ -526,8 +528,10 @@ public final class Main {
                     }
 
                     try {
-                        logger.getReduceFileWriter().close();
-                        logger.reduceFileWriter = null;
+                        if (logger.logEachSelect) {
+                            logger.getReduceFileWriter().close();
+                            logger.reduceFileWriter = null;
+                        }
                     } catch (IOException e) {
                         throw new AssertionError(e);
                     }
