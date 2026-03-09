@@ -61,6 +61,8 @@ public class SQLite3IndexGenerator {
          * https://www.mail-archive.com/sqlite-users@mailinglists.sqlite.org/msg115014.html).
          */
         errors.add("[SQLITE_ERROR] SQL error or missing database (no such column:");
+        errors.add("[SQLITE_CONSTRAINT]");
+        errors.add("constraint failed");
         return new SQLQueryAdapter(q, errors, true);
     }
 
