@@ -827,7 +827,8 @@ public final class Main {
                         reduce.printStackTrace();
                         executor.getStateToReproduce().exception = reduce.getMessage();
                         executor.getLogger().logFileWriter = null;
-                        executor.getLogger().logException(reduce, executor.getStateToReproduce());
+                        // Don't print error reproduction log
+                        // executor.getLogger().logException(reduce, executor.getStateToReproduce());
                         if (options.serializeReproduceState()) {
                             executor.getStateToReproduce().logStatement(reduce.getMessage()); // add the error statement
                             executor.getStateToReproduce().serialize(executor.getLogger().getReproduceFilePath());
