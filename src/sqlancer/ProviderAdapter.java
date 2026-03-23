@@ -125,8 +125,9 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
     @Override
     public Reproducer<G> generateAndTestUnifiedDatabase(G globalState) throws Exception {
         int queryCounter = 0;
-        int RECONNECT_THRESHOLD = 100000; // Adjust based on your memory needs
+        int RECONNECT_THRESHOLD = 1000000; // Adjust based on your memory needs
         try {
+            
             generateUnifiedDatabase(globalState);
             checkViewsAreValid(globalState);
             globalState.getManager().incrementCreateDatabase();
