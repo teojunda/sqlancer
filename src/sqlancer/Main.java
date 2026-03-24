@@ -854,7 +854,8 @@ public final class Main {
                         executor.getLogger().logException(reduce, executor.getStateToReproduce());
                         if (options.serializeReproduceState()) {
                             executor.getStateToReproduce().logStatement(reduce.getMessage()); // add the error statement
-                            executor.getStateToReproduce().serialize(executor.getLogger().getReproduceFilePath());
+                            executor.getStateToReproduce(
+                            ).serialize(executor.getLogger().getReproduceFilePath());
                         }
                         return false;
                     } finally {
