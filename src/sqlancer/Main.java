@@ -75,9 +75,11 @@ public final class Main {
         private File curFile;
         private File queryPlanFile;
         private File reduceFile;
+        private File myLogFile;
         private FileWriter logFileWriter;
         public FileWriter currentFileWriter;
         private FileWriter queryPlanFileWriter;
+        private FileWriter myLogFileWriter;
         private FileWriter reduceFileWriter;
         private Path reproduceFilePath;
 
@@ -194,6 +196,18 @@ public final class Main {
             return currentFileWriter;
         }
 
+        public FileWriter getMyLogFileWriter() {
+            if (myLogFileWriter == null) {
+                try {
+                    myLogFile = new File(dir, "myLog.log");
+                    myLogFileWriter = new FileWriter(myLogFile, false);
+                } catch (IOException e) {
+                    throw new AssertionError(e);
+                }
+            }
+            return myLogFileWriter;
+        }
+
         public FileWriter getQueryPlanFileWriter() {
             if (!logQueryPlan) {
                 throw new UnsupportedOperationException();
@@ -273,6 +287,15 @@ public final class Main {
             try {
                 getQueryPlanFileWriter().append(removeNamesFromQueryPlans(queryPlan));
                 queryPlanFileWriter.flush();
+            } catch (IOException e) {
+                throw new AssertionError();
+            }
+        }
+
+        public void writeMyLog(String log) {
+            try {
+                getMyLogFileWriter().append(log);
+                myLogFileWriter.flush();
             } catch (IOException e) {
                 throw new AssertionError();
             }
