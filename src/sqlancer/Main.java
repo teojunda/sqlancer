@@ -200,7 +200,7 @@ public final class Main {
             if (myLogFileWriter == null) {
                 try {
                     myLogFile = new File(dir, "myLog.log");
-                    myLogFileWriter = new FileWriter(myLogFile, false);
+                    myLogFileWriter = new FileWriter(myLogFile, true);
                 } catch (IOException e) {
                     throw new AssertionError(e);
                 }
@@ -349,7 +349,8 @@ public final class Main {
             FileWriter logFileWriter2 = getLogFileWriter();
             try {
                 logFileWriter2.write(stackTrace.getLogString());
-                printState(logFileWriter2, state);
+                // Don't print to stdout
+                // printState(logFileWriter2, state);
             } catch (IOException e) {
                 throw new AssertionError(e);
             } finally {
@@ -850,8 +851,7 @@ public final class Main {
                         reduce.printStackTrace();
                         executor.getStateToReproduce().exception = reduce.getMessage();
                         executor.getLogger().logFileWriter = null;
-                        // Don't print error reproduction log
-                        // executor.getLogger().logException(reduce, executor.getStateToReproduce());
+                        executor.getLogger().logException(reduce, executor.getStateToReproduce());
                         if (options.serializeReproduceState()) {
                             executor.getStateToReproduce().logStatement(reduce.getMessage()); // add the error statement
                             executor.getStateToReproduce().serialize(executor.getLogger().getReproduceFilePath());
