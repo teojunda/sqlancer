@@ -127,8 +127,12 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
         int queryCounter = 0;
         int RECONNECT_THRESHOLD = 1000000; // Adjust based on your memory needs
         try {
-            
+            long startTime = System.currentTimeMillis();
             generateUnifiedDatabase(globalState);
+            long endTime = System.currentTimeMillis();
+            double elapsedTimeSeconds = (endTime - startTime) / 1000.0;
+            globalState.getLogger().writeMyLog("Elapsed time: " + elapsedTimeSeconds + " seconds");
+
             checkViewsAreValid(globalState);
             globalState.getManager().incrementCreateDatabase();
 
