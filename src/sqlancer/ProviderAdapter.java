@@ -124,7 +124,11 @@ public abstract class ProviderAdapter<G extends GlobalState<O, ? extends Abstrac
     public Reproducer<G> generateAndTestUnifiedDatabase(G globalState) throws Exception {
         try {
             if (!unifiedDbIsCached) {
+                long startTime = System.currentTimeMillis();
                 generateUnifiedDatabase(globalState);
+                long endTime = System.currentTimeMillis();
+                double elapsedTimeSeconds = (endTime - startTime) / 1000.0;
+                globalState.getLogger().writeMyLog("Elapsed time: " + elapsedTimeSeconds + " seconds");
                 checkViewsAreValid(globalState);
                 unifiedDbIsCached = true;
             }

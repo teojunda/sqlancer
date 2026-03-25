@@ -80,6 +80,8 @@ public final class Main {
         private FileWriter queryPlanFileWriter;
         private FileWriter reduceFileWriter;
         private Path reproduceFilePath;
+        private File myLogFile;
+        private FileWriter myLogFileWriter;
 
         private static final List<String> INITIALIZED_PROVIDER_NAMES = new ArrayList<>();
         private final boolean logEachSelect;
@@ -179,6 +181,29 @@ public final class Main {
             }
             return logFileWriter;
         }
+
+        public FileWriter getMyLogFileWriter() {
+            if (myLogFileWriter == null) {
+                try {
+                    myLogFile = new File(dir, "myLog.log");
+                    myLogFileWriter = new FileWriter(myLogFile, true);
+                } catch (IOException e) {
+                    throw new AssertionError(e);
+                }
+            }
+            return myLogFileWriter;
+        }
+
+
+        public void writeMyLog(String log) {
+            try {
+                getMyLogFileWriter().append(log);
+                myLogFileWriter.flush();
+            } catch (IOException e) {
+                throw new AssertionError();
+            }
+        }
+
 
         public FileWriter getCurrentFileWriter() {
             if (!logEachSelect) {
